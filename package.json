@@ -4,7 +4,7 @@
   "main": "src/index.js",
   "description": "ERLC Discord Bot",
   "scripts": {
-    "start": "node deploy-commands.js && node src/index.js",
+    "start": "node src/index.js"
     "deploy": "node deploy-commands.js"
   },
   "dependencies": {
