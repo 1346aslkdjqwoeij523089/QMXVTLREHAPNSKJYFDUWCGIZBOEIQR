@@ -132,6 +132,17 @@ client.on("interactionCreate", async interaction => {
     }
 
 });
+const interactionHandler = require("./events/interactionCreate");
 
+client.on("interactionCreate", async (interaction) => {
+    await interactionHandler(client, interaction);
+
+    if (!interaction.isChatInputCommand()) return;
+
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
+
+    await command.execute(client, interaction);
+});
 // Login
 client.login(process.env.TOKEN);
