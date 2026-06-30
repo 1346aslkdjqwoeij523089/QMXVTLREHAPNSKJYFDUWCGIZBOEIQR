@@ -12,14 +12,18 @@ const {
 // Services
 const APIService = require("./services/erlc/APIService");
 
-// Client (MINIMAL INTENTS)
+// =========================
+// CLIENT (MINIMAL + SAFE)
+// =========================
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds
     ]
 });
 
-// Collections
+// =========================
+// COLLECTIONS
+// =========================
 client.commands = new Collection();
 client.cooldowns = new Collection();
 
@@ -27,9 +31,8 @@ client.cooldowns = new Collection();
 client.erlc = new APIService();
 
 // =========================
-// Load Commands
+// LOAD COMMANDS
 // =========================
-
 const commandsPath = path.join(__dirname, "commands");
 
 function loadCommands(directory) {
@@ -62,45 +65,62 @@ function loadCommands(directory) {
 loadCommands(commandsPath);
 
 // =========================
-// Interaction Handler (SINGLE SOURCE OF TRUTH)
+// SINGLE INTERACTION HANDLER
 // =========================
-
-const interactionHandler = require("./events/interactionCreate");
-
 client.on("interactionCreate", async (interaction) => {
-    await interactionHandler(client, interaction);
-
-    if (!interaction.isChatInputCommand()) return;
-
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
 
     try {
-        await command.execute(client, interaction);
-    } catch (err) {
-        console.error(err);
 
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({
-                content: "❌ Error executing command.",
-                ephemeral: true
-            });
-        } else {
-            await interaction.reply({
-                content: "❌ Error executing command.",
-                ephemeral: true
-            });
+        // =========================
+        // SLASH COMMANDS
+        // =========================
+        if (interaction.isChatInputCommand()) {
+
+            const command = client.commands.get(interaction.commandName);
+
+            if (!command) {
+                console.log("Unknown command:", interaction.commandName);
+                return;
+            }
+
+            console.log("Running command:", interaction.commandName);
+
+            return await command.execute(client, interaction);
+        }
+
+        // =========================
+        // BUTTONS + MODALS
+        // =========================
+        const interactionHandler = require("./events/interactionCreate");
+        return await interactionHandler(client, interaction);
+
+    } catch (err) {
+        console.error("Interaction error:", err);
+
+        if (!interaction.replied && !interaction.deferred) {
+            try {
+                await interaction.reply({
+                    content: "❌ Unexpected error occurred.",
+                    ephemeral: true
+                });
+            } catch {}
         }
     }
 });
 
+// =========================
 // READY EVENT
+// =========================
 client.once("ready", () => {
+
     console.log("--------------------------------");
     console.log(`Logged in as ${client.user.tag}`);
     console.log(`Guilds: ${client.guilds.cache.size}`);
     console.log("--------------------------------");
+
 });
 
+// =========================
 // LOGIN
+// =========================
 client.login(process.env.TOKEN);
