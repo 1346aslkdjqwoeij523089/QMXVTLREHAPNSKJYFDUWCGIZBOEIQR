@@ -10,35 +10,29 @@ function loadCommands(dir) {
     const files = fs.readdirSync(dir);
 
     for (const file of files) {
-        const fullPath = path.join(dir, file);
+        const full = path.join(dir, file);
 
-        if (fs.statSync(fullPath).isDirectory()) {
-            loadCommands(fullPath);
+        if (fs.statSync(full).isDirectory()) {
+            loadCommands(full);
         } else if (file.endsWith(".js")) {
-            const command = require(fullPath);
+            const cmd = require(full);
 
-            if (command.data) {
-                commands.push(command.data.toJSON());
-                console.log(`Loaded: ${command.data.name}`);
+            if (cmd.data) {
+                commands.push(cmd.data.toJSON());
+                console.log("Loaded:", cmd.data.name);
             }
         }
     }
 }
 
-// FIXED PATH
-loadCommands(path.join(__dirname, "commands"));
+// ✅ FIXED PATH
+loadCommands(path.join(__dirname, "src/commands"));
 
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
-        console.log("Deploying slash commands...");
-
-        console.log({
-            TOKEN: !!process.env.TOKEN,
-            CLIENT_ID: process.env.CLIENT_ID,
-            GUILD_ID: process.env.GUILD_ID
-        });
+        console.log("Deploying commands...");
 
         await rest.put(
             Routes.applicationGuildCommands(
@@ -48,8 +42,8 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
             { body: commands }
         );
 
-        console.log("Successfully deployed commands.");
-    } catch (error) {
-        console.error(error);
+        console.log("Commands deployed.");
+    } catch (err) {
+        console.error(err);
     }
 })();
