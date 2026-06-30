@@ -6,22 +6,16 @@ const path = require("node:path");
 const {
     Client,
     Collection,
-    GatewayIntentBits,
-    Partials
+    GatewayIntentBits
 } = require("discord.js");
 
 // Services
 const APIService = require("./services/erlc/APIService");
 
-// Client
+// Client (MINIMAL INTENTS)
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages
-    ],
-    partials: [
-        Partials.Channel
+        GatewayIntentBits.Guilds
     ]
 });
 
@@ -31,20 +25,6 @@ client.cooldowns = new Collection();
 
 // Services
 client.erlc = new APIService();
-
-// Temporary permission manager
-client.permissionManager = {
-    async hasPermission(member, permission) {
-        return true;
-    }
-};
-
-// Temporary logger
-client.logger = {
-    async command(data) {
-        console.log("[COMMAND LOG]", data);
-    }
-};
 
 // =========================
 // Load Commands
@@ -74,64 +54,17 @@ function loadCommands(directory) {
 
             client.commands.set(command.data.name, command);
 
-            console.log(`Loaded command ${command.data.name}`);
-
+            console.log(`Loaded command: ${command.data.name}`);
         }
-
     }
-
 }
 
 loadCommands(commandsPath);
 
 // =========================
-// Events
+// Interaction Handler (SINGLE SOURCE OF TRUTH)
 // =========================
 
-client.once("ready", () => {
-
-    console.log("--------------------------------");
-    console.log(`Logged in as ${client.user.tag}`);
-    console.log(`Guilds: ${client.guilds.cache.size}`);
-    console.log("--------------------------------");
-
-});
-
-client.on("interactionCreate", async interaction => {
-
-    if (!interaction.isChatInputCommand()) return;
-
-    const command = client.commands.get(interaction.commandName);
-
-    if (!command) return;
-
-    try {
-
-        await command.execute(client, interaction);
-
-    } catch (error) {
-
-        console.error(error);
-
-        if (interaction.replied || interaction.deferred) {
-
-            await interaction.followUp({
-                content: "❌ An unexpected error occurred.",
-                ephemeral: true
-            });
-
-        } else {
-
-            await interaction.reply({
-                content: "❌ An unexpected error occurred.",
-                ephemeral: true
-            });
-
-        }
-
-    }
-
-});
 const interactionHandler = require("./events/interactionCreate");
 
 client.on("interactionCreate", async (interaction) => {
@@ -142,17 +75,32 @@ client.on("interactionCreate", async (interaction) => {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
 
-    await command.execute(client, interaction);
-});
-client.once("ready", async () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    try {
+        await command.execute(client, interaction);
+    } catch (err) {
+        console.error(err);
 
-    // OPTIONAL: auto-register commands on boot
-    if (process.env.AUTO_DEPLOY === "true") {
-        require("../deploy-commands");
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({
+                content: "❌ Error executing command.",
+                ephemeral: true
+            });
+        } else {
+            await interaction.reply({
+                content: "❌ Error executing command.",
+                ephemeral: true
+            });
+        }
     }
 });
 
+// READY EVENT
+client.once("ready", () => {
+    console.log("--------------------------------");
+    console.log(`Logged in as ${client.user.tag}`);
+    console.log(`Guilds: ${client.guilds.cache.size}`);
+    console.log("--------------------------------");
+});
 
-// Login
+// LOGIN
 client.login(process.env.TOKEN);
