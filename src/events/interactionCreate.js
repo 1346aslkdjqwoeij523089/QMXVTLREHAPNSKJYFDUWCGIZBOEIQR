@@ -50,3 +50,28 @@ module.exports = async (client, interaction) => {
     }
 
 };
+
+const GuildRepo2 = require("../database/repositories/GuildRepository");
+
+module.exports = async (client, interaction) => {
+
+    if (!interaction.isModalSubmit()) return;
+
+    if (interaction.customId === "erlc_api_modal") {
+
+        const apiKey = interaction.fields.getTextInputValue("api_key");
+
+        let guild = await GuildRepo2.get(interaction.guild.id);
+
+        if (!guild) {
+            guild = await GuildRepo2.create(interaction.guild.id);
+        }
+
+        await GuildRepo2.setApiKey(interaction.guild.id, apiKey);
+
+        return interaction.reply({
+            content: "✅ API Key saved successfully.",
+            ephemeral: true
+        });
+    }
+};
