@@ -6,7 +6,6 @@ const { REST, Routes } = require("discord.js");
 
 const commands = [];
 
-// Recursively load commands
 function loadCommands(dir) {
     const files = fs.readdirSync(dir);
 
@@ -26,14 +25,20 @@ function loadCommands(dir) {
     }
 }
 
-// Load all commands from src/commands
-loadCommands(path.join(__dirname, "src/commands"));
+// FIXED PATH
+loadCommands(path.join(__dirname, "commands"));
 
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
         console.log("Deploying slash commands...");
+
+        console.log({
+            TOKEN: !!process.env.TOKEN,
+            CLIENT_ID: process.env.CLIENT_ID,
+            GUILD_ID: process.env.GUILD_ID
+        });
 
         await rest.put(
             Routes.applicationGuildCommands(
