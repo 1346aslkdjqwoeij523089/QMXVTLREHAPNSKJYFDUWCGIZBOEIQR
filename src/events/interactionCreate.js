@@ -9,69 +9,91 @@ const GuildRepo = require("../database/repositories/GuildRepository");
 
 module.exports = async (client, interaction) => {
 
-    if (!interaction.isButton()) return;
+    // =========================
+    // SLASH COMMANDS
+    // =========================
+    if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
 
-    // OPEN API KEY MODAL
-    if (interaction.customId === "erlc_set_api") {
+        if (!command) return;
 
-        const modal = new ModalBuilder()
-            .setCustomId("erlc_api_modal")
-            .setTitle("Set ERLC API Key");
+        try {
+            return await command.execute(client, interaction);
+        } catch (err) {
+            console.error(err);
 
-        const input = new TextInputBuilder()
-            .setCustomId("api_key")
-            .setLabel("Enter API Key")
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
-
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(input)
-        );
-
-        return interaction.showModal(modal);
+            if (!interaction.replied) {
+                return interaction.reply({
+                    content: "❌ Command error.",
+                    ephemeral: true
+                });
+            }
+        }
     }
 
-    // TEST CONNECTION
-    if (interaction.customId === "erlc_test_api") {
+    // =========================
+    // BUTTONS
+    // =========================
+    if (interaction.isButton()) {
 
-        const guild = await GuildRepo.get(interaction.guild.id);
+        if (interaction.customId === "erlc_set_api") {
 
-        if (!guild?.api_key) {
+            const modal = new ModalBuilder()
+                .setCustomId("erlc_api_modal")
+                .setTitle("Set ERLC API Key");
+
+            const input = new TextInputBuilder()
+                .setCustomId("api_key")
+                .setLabel("Enter API Key")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(input)
+            );
+
+            return interaction.showModal(modal);
+        }
+
+        if (interaction.customId === "erlc_test_api") {
+
+            const guild = await GuildRepo.get(interaction.guild.id);
+
+            if (!guild?.api_key) {
+                return interaction.reply({
+                    content: "No API key set.",
+                    ephemeral: true
+                });
+            }
+
             return interaction.reply({
-                content: "No API key set.",
+                content: "✅ API key exists (connection test placeholder).",
                 ephemeral: true
             });
         }
-
-        return interaction.reply({
-            content: "API key exists (test would go here).",
-            ephemeral: true
-        });
     }
 
-};
+    // =========================
+    // MODALS
+    // =========================
+    if (interaction.isModalSubmit()) {
 
-const GuildRepo2 = require("../database/repositories/GuildRepository");
+        if (interaction.customId === "erlc_api_modal") {
 
-module.exports = async (client, interaction) => {
+            const apiKey = interaction.fields.getTextInputValue("api_key");
 
-    if (!interaction.isModalSubmit()) return;
+            let guild = await GuildRepo.get(interaction.guild.id);
 
-    if (interaction.customId === "erlc_api_modal") {
+            if (!guild) {
+                guild = await GuildRepo.create(interaction.guild.id);
+            }
 
-        const apiKey = interaction.fields.getTextInputValue("api_key");
+            await GuildRepo.setApiKey(interaction.guild.id, apiKey);
 
-        let guild = await GuildRepo2.get(interaction.guild.id);
-
-        if (!guild) {
-            guild = await GuildRepo2.create(interaction.guild.id);
+            return interaction.reply({
+                content: "✅ API Key saved successfully.",
+                ephemeral: true
+            });
         }
-
-        await GuildRepo2.setApiKey(interaction.guild.id, apiKey);
-
-        return interaction.reply({
-            content: "✅ API Key saved successfully.",
-            ephemeral: true
-        });
     }
 };
