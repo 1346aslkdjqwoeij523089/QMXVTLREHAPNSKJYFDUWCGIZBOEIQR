@@ -14,50 +14,59 @@ module.exports = {
                 .setRequired(true)
         ),
 
-    category: "administration",
+    category: "Administration",
     permission: "erlc.admin",
 
     async execute(client, interaction) {
 
-        const player = interaction.options.getString("player");
-
-        // IMPORTANT: prevents "This interaction failed"
+        // ✅ FIX #1: prevent timeout ("application did not respond")
         await interaction.deferReply();
 
+        const player = interaction.options.getString("player");
+
         try {
-            // Permission check (replace later with real system)
-            const allowed = await client.permissionManager?.hasPermission?.(
+
+            // Optional safety check
+            const allowed = await client.permissionManager.hasPermission(
                 interaction.member,
                 "erlc.admin"
-            ) ?? true;
-
-            if (!allowed) {
-                return interaction.editReply("❌ You do not have permission.");
-            }
-
-            // Safety check for service
-            if (!client.erlc || !client.erlc.runCommand) {
-                return interaction.editReply("❌ ERLC service not loaded.");
-            }
-
-            // Run ERLC command
-            await client.erlc.runCommand(
-                interaction.guild.id,
-                `:admin ${player}`
             );
 
+            if (!allowed) {
+                return interaction.editReply({
+                    content: "❌ You do not have permission to use this command."
+                });
+            }
+
+            // ✅ FIX #2: protect slow API calls
+            await Promise.race([
+                client.erlc.runCommand(
+                    interaction.guild.id,
+                    `admin ${player}`
+                ),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("ERLC timeout")), 8000)
+                )
+            ]);
+
             const embed = new EmbedBuilder()
-                .setColor("Green")
-                .setTitle("ER:LC Admin Granted")
-                .setDescription(`✅ Granted **Administrator** to **${player}**`)
+                .setColor(0x00ff00)
+                .setTitle("Administrator Granted")
+                .setDescription(`Successfully granted **Administrator** to **${player}**.`)
                 .setTimestamp();
 
-            return interaction.editReply({ embeds: [embed] });
+            return interaction.editReply({
+                embeds: [embed]
+            });
 
-        } catch (err) {
-            console.error("ERLC ADMIN ERROR:", err);
+        } catch (error) {
 
-            return interaction.editReply("❌ Failed to execute ERLC command.");
+            console.error("ERLC COMMAND ERROR:", error);
+
+            return interaction.editReply({
+                content: "❌ Failed to execute ER:LC command (API error or timeout)."
+            });
+
         }
     }
 };
