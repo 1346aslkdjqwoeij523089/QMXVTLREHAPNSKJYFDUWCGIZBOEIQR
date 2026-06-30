@@ -2,18 +2,15 @@
   "name": "echelon-erlc-bot",
   "version": "1.0.0",
   "main": "src/index.js",
-  "description": "ERLC Discord Bot",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
     "deploy": "node deploy-commands.js"
   },
   "dependencies": {
-    "discord.js": "^14.14.1",
-    "dotenv": "^16.4.5",
-    "axios": "^1.6.0",
-    "pg": "^8.11.3"
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.4.5"
   },
   "engines": {
-    "node": ">=18"
+    "node": "18.x"
   }
 }
