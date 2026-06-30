@@ -12,9 +12,7 @@ class GuildRepository {
 
     async create(guildId) {
         const res = await db.query(
-            "INSERT INTO guilds (guild_id, prefix, api_key, ssd_enabled)
-             VALUES ($1, ':', NULL, false)
-             RETURNING *",
+            "INSERT INTO guilds (guild_id, prefix, api_key, ssd_enabled) VALUES ($1, ':', NULL, false) RETURNING *",
             [guildId]
         );
         return res.rows[0];
@@ -33,7 +31,6 @@ class GuildRepository {
             [prefix, guildId]
         );
     }
-
 }
 
 module.exports = new GuildRepository();
