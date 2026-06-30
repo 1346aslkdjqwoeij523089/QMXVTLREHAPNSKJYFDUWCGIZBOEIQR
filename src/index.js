@@ -144,5 +144,15 @@ client.on("interactionCreate", async (interaction) => {
 
     await command.execute(client, interaction);
 });
+client.once("ready", async () => {
+    console.log(`Logged in as ${client.user.tag}`);
+
+    // OPTIONAL: auto-register commands on boot
+    if (process.env.AUTO_DEPLOY === "true") {
+        require("../deploy-commands");
+    }
+});
+
+
 // Login
 client.login(process.env.TOKEN);
