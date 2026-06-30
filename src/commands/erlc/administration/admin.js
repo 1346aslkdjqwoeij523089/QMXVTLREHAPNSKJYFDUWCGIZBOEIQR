@@ -1,6 +1,5 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits,
     EmbedBuilder
 } = require("discord.js");
 
@@ -15,64 +14,50 @@ module.exports = {
                 .setRequired(true)
         ),
 
-    category: "Administration",
-
+    category: "administration",
     permission: "erlc.admin",
 
     async execute(client, interaction) {
 
         const player = interaction.options.getString("player");
 
-        // Check custom permission system
-        const allowed = await client.permissionManager.hasPermission(
-            interaction.member,
-            "erlc.admin"
-        );
-
-        if (!allowed) {
-            return interaction.reply({
-                content: "❌ You do not have permission to use this command.",
-                ephemeral: true
-            });
-        }
+        // IMPORTANT: prevents "This interaction failed"
+        await interaction.deferReply();
 
         try {
+            // Permission check (replace later with real system)
+            const allowed = await client.permissionManager?.hasPermission?.(
+                interaction.member,
+                "erlc.admin"
+            ) ?? true;
 
-            // Executes ":admin <player>"
+            if (!allowed) {
+                return interaction.editReply("❌ You do not have permission.");
+            }
+
+            // Safety check for service
+            if (!client.erlc || !client.erlc.runCommand) {
+                return interaction.editReply("❌ ERLC service not loaded.");
+            }
+
+            // Run ERLC command
             await client.erlc.runCommand(
                 interaction.guild.id,
-                `admin ${player}`
+                `:admin ${player}`
             );
 
             const embed = new EmbedBuilder()
                 .setColor("Green")
-                .setTitle("Administrator Granted")
-                .setDescription(`Successfully granted **Administrator** to **${player}**.`)
+                .setTitle("ER:LC Admin Granted")
+                .setDescription(`✅ Granted **Administrator** to **${player}**`)
                 .setTimestamp();
 
-            await interaction.reply({
-                embeds: [embed]
-            });
+            return interaction.editReply({ embeds: [embed] });
 
-            // Log action
-            await client.logger.command({
-                guild: interaction.guild.id,
-                user: interaction.user.id,
-                command: "admin",
-                arguments: player,
-                success: true
-            });
+        } catch (err) {
+            console.error("ERLC ADMIN ERROR:", err);
 
-        } catch (error) {
-
-            console.error(error);
-
-            await interaction.reply({
-                content: "❌ Failed to execute the ER:LC command.",
-                ephemeral: true
-            });
-
+            return interaction.editReply("❌ Failed to execute ERLC command.");
         }
-
     }
 };
