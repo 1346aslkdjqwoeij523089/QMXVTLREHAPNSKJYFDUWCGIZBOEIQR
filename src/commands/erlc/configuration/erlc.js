@@ -1,6 +1,5 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits,
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
@@ -10,39 +9,43 @@ const {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("erlc")
-        .setDescription("ERLC configuration panel")
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDescription("ERLC configuration panel"),
 
     async execute(client, interaction) {
 
-        if (interaction.user.id !== interaction.guild.ownerId) {
-            return interaction.reply({
-                content: "Only the server owner can use this.",
+        try {
+            const embed = new EmbedBuilder()
+                .setTitle("ERLC Setup Panel")
+                .setDescription("Configure your ERLC bot settings")
+                .setColor("Blue");
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId("erlc_set_api")
+                    .setLabel("Set API Key")
+                    .setStyle(ButtonStyle.Primary),
+
+                new ButtonBuilder()
+                    .setCustomId("erlc_test_api")
+                    .setLabel("Test Connection")
+                    .setStyle(ButtonStyle.Success)
+            );
+
+            return await interaction.reply({
+                embeds: [embed],
+                components: [row],
                 ephemeral: true
             });
+
+        } catch (err) {
+            console.error("ERLC command error:", err);
+
+            if (!interaction.replied) {
+                await interaction.reply({
+                    content: "❌ Command failed.",
+                    ephemeral: true
+                });
+            }
         }
-
-        const embed = new EmbedBuilder()
-            .setTitle("ER:LC Setup Panel")
-            .setDescription("Configure your ER:LC bot settings.")
-            .setColor("Blue");
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId("erlc_set_api")
-                .setLabel("Set API Key")
-                .setStyle(ButtonStyle.Primary),
-
-            new ButtonBuilder()
-                .setCustomId("erlc_test_api")
-                .setLabel("Test Connection")
-                .setStyle(ButtonStyle.Success)
-        );
-
-        await interaction.reply({
-            embeds: [embed],
-            components: [row],
-            ephemeral: true
-        });
     }
 };
