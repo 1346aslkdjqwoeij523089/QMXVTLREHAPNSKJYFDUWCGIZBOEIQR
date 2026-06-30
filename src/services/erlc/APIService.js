@@ -1,14 +1,18 @@
+const GuildRepo = require("../../database/repositories/GuildRepository");
+
 class APIService {
 
     async runCommand(guildId, command) {
 
-        console.log("==============");
-        console.log("Guild:", guildId);
-        console.log("ERLC Command:", command);
-        console.log("==============");
+        const guild = await GuildRepo.get(guildId);
+
+        if (!guild?.api_key) {
+            throw new Error("No API key set for guild.");
+        }
+
+        console.log(`[ERLC] ${command} | KEY: ${guild.api_key}`);
 
         return true;
-
     }
 
 }
